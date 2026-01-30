@@ -15,7 +15,7 @@ const client = new Client({
 });
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
-const OWNER_ID = "1463951189984018588";
+const OWNER_ID = "1464634211406188721";
 
 const SUPPORT_ROLES = [
   "1463224284922249420",
